@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>贪吃蛇 - C语言 + WebAssembly</title>
+    <style>
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            text-align: center;
+        }
+        canvas {
+            border: 3px solid #00ffaa;
+            background: #000;
+            box-shadow: 0 0 20px rgba(0,255,170,0.3);
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ffaa;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        button {
+            background: #00ffaa;
+            border: none;
+            padding: 10px 20px;
+            margin: 4px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        button:hover {
+            background: #ffaa00;
+            transform: scale(1.05);
+        }
+        .status {
+            margin-top: 10px;
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <canvas id="canvas" width="400" height="300"></canvas>
+    <div class="info">🐍 SCORE: <span id="score">0</span></div>
+    <div class="controls">
+        <button id="up">⬆️ 上</button>
+        <button id="left">⬅️ 左</button>
+        <button id="down">⬇️ 下</button>
+        <button id="right">➡️ 右</button>
+        <button id="restart">🔄 重新开始</button>
+    </div>
+    <div class="status">💡 方向键控制 | R 重新开始</div>
+</div>
+
+<script src="snake.js"></script>
+<script>
+    var Module = {
+        onRuntimeInitialized: function() {
+            console.log("游戏已启动");
+            _game_init();
+            
+            setInterval(function() {
+                _game_update();
+                render();
+            }, 100);
+        }
+    };
+    
+    function render() {
+        var isGameOver = _game_is_over();
+        if (isGameOver) {
+            document.getElementById('score').innerHTML = "💀 GAME OVER - " + _game_get_score();
+            return;
+        }
+        
+        var w = _game_get_width();
+        var h = _game_get_height();
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        var cellW = canvas.width / w;
+        var cellH = canvas.height / h;
+        
+        // 清屏
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 画网格
+        ctx.strokeStyle = '#1a3a2a';
+        ctx.lineWidth = 0.5;
+        for (var i = 0; i <= w; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * cellW, 0);
+            ctx.lineTo(i * cellW, canvas.height);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, i * cellH);
+            ctx.lineTo(canvas.width, i * cellH);
+            ctx.stroke();
+        }
+        
+        // 画食物
+        ctx.fillStyle = '#ff4444';
+        var fx = _game_get_food_x();
+        var fy = _game_get_food_y();
+        ctx.fillRect(fx * cellW, fy * cellH, cellW - 1, cellH - 1);
+        
+        // 画蛇
+        var len = _game_get_snake_len();
+        for (var i = 0; i < len; i++) {
+            var sx = _game_get_snake_x(i);
+            var sy = _game_get_snake_y(i);
+            if (i === 0) {
+                ctx.fillStyle = '#00ff66';  // 蛇头亮绿
+            } else {
+                ctx.fillStyle = '#00cc88';  // 蛇身暗绿
+            }
+            ctx.fillRect(sx * cellW, sy * cellH, cellW - 1, cellH - 1);
+        }
+        
+        document.getElementById('score').innerHTML = _game_get_score();
+    }
+    
+    function setDir(dx, dy) {
+        _game_set_direction(dx, dy);
+    }
+    
+    document.getElementById('up').onclick = function() { setDir(0, -1); };
+    document.getElementById('down').onclick = function() { setDir(0, 1); };
+    document.getElementById('left').onclick = function() { setDir(-1, 0); };
+    document.getElementById('right').onclick = function() { setDir(1, 0); };
+    document.getElementById('restart').onclick = function() { _game_init(); };
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowUp') { e.preventDefault(); setDir(0, -1); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); setDir(0, 1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); setDir(-1, 0); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); setDir(1, 0); }
+        if (e.key === 'r' || e.key === 'R') { _game_init(); }
+    });
+</script>
+</body>
+</html>
